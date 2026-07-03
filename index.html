@@ -69,6 +69,48 @@
   .pub-title { font-size: 22px; font-weight: 700; color: #0f1e45; text-align: center; }
   .pub-sub { font-size: 14px; color: #6b7280; text-align: center; margin-top: 4px; }
 
+  .install-banner {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: 16px;
+    z-index: 9999;
+    background: #0f1e45;
+    color: #fff;
+    border-radius: 14px;
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    animation: install-banner-in 0.3s ease-out;
+  }
+  @keyframes install-banner-in {
+    from { transform: translateY(20px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .install-banner-text { flex: 1; font-size: 14px; }
+  .install-banner-btn {
+    background: #22c55e;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-weight: 600;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .install-banner-btn:hover { background: #1a3060; }
+  .install-banner-close {
+    background: transparent;
+    border: none;
+    color: #cbd5e1;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+
   .form-card {
     background: white;
     border-radius: 18px;
@@ -478,6 +520,13 @@
 </style>
 </head>
 <body>
+
+<!-- ===== BOTÃO DE INSTALAÇÃO DO PWA ===== -->
+<div id="install-banner" class="install-banner" style="display:none;">
+  <span class="install-banner-text">📲 Instale o app para acesso rápido</span>
+  <button id="btn-install" class="install-banner-btn" type="button">Instalar</button>
+  <button id="btn-install-close" class="install-banner-close" type="button" aria-label="Fechar">✕</button>
+</div>
 
 <!-- ===== PUBLIC SCREEN ===== -->
 <div class="screen active" id="screen-public">
@@ -1040,6 +1089,39 @@ window.editarRegistro = editarRegistro;
 window.limparDados = limparDados;
 
 goPublic();
+
+// ── PWA: Botão de instalação personalizado ──────────────────────────────────
+let deferredInstallPrompt = null;
+const installBanner = document.getElementById('install-banner');
+const btnInstall = document.getElementById('btn-install');
+const btnInstallClose = document.getElementById('btn-install-close');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  // Não mostra de novo se o usuário já fechou nesta sessão
+  if (!sessionStorage.getItem('installBannerDismissed')) {
+    installBanner.style.display = 'flex';
+  }
+});
+
+btnInstall?.addEventListener('click', async () => {
+  if (!deferredInstallPrompt) return;
+  installBanner.style.display = 'none';
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+});
+
+btnInstallClose?.addEventListener('click', () => {
+  installBanner.style.display = 'none';
+  sessionStorage.setItem('installBannerDismissed', '1');
+});
+
+window.addEventListener('appinstalled', () => {
+  installBanner.style.display = 'none';
+  deferredInstallPrompt = null;
+});
 
 // ── PWA: Registra o Service Worker ──────────────────────────────────────────
 if ('serviceWorker' in navigator) {
